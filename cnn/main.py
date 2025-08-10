@@ -23,10 +23,6 @@ class CNN(nn.Module):
 
     def forward(self, x) -> torch.tensor:
         return self.layers(x)
-    
-model = CNN()
-loss_fn = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, optimizer: optim.Optimizer, device: str) -> None:
     for inputs, label in dataloader:
@@ -52,6 +48,10 @@ def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, device: s
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 def run() -> None:
+    model = CNN()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
     transform = transforms.Compose([
         transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.8, 1.2)),
         transforms.ToTensor(),
