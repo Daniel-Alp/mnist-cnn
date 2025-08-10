@@ -53,6 +53,7 @@ def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, device: s
 
 def run() -> None:
     transform = transforms.Compose([
+        transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.8, 1.2)),
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,))
     ])
@@ -67,7 +68,7 @@ def run() -> None:
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
-    epochs = 5
+    epochs = 10
     for t in range(epochs):
         print(f"Epoch {t+1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, device)
