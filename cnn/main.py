@@ -5,21 +5,6 @@ import torchvision
 import torch.optim as optim
 import torchvision.transforms as transforms
 
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.1307,), (0.3081,))
-])
-
-train_dataset = torchvision.datasets.MNIST(root="./data", download=True, train=True, transform=transform)
-test_dataset = torchvision.datasets.MNIST(root="./data", train=False, transform=transform)
-
-batch_size = 64
-
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
-
-device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
-
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -43,16 +28,15 @@ model = CNN()
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, optimizer: optim.Optimizer) -> None:
+def train(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, optimizer: optim.Optimizer, device: str) -> None:
     for inputs, label in dataloader:
         pred = model(inputs)
         loss = loss_fn(pred, label)
-
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
 
-def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module) -> None:
+def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module, device: str) -> None:
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
@@ -67,11 +51,30 @@ def test(dataloader: DataLoader, model: nn.Module, loss_fn: nn.Module) -> None:
     correct /= size
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
-epochs = 5
-for t in range(epochs):
-    print(f"Epoch {t+1}\n-------------------------------")
-    train(train_dataloader, model, loss_fn, optimizer)
-    test(test_dataloader, model, loss_fn)
-print("Done!")
+def run() -> None:
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,))
+    ])
 
-torch.save(model.state_dict(), "mnistmodel.pth")
+    train_dataset = torchvision.datasets.MNIST(root="./data", download=True, train=True, transform=transform)
+    test_dataset = torchvision.datasets.MNIST(root="./data", train=False, transform=transform)
+
+    batch_size = 64
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
+
+    device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
+
+    epochs = 5
+    for t in range(epochs):
+        print(f"Epoch {t+1}\n-------------------------------")
+        train(train_dataloader, model, loss_fn, optimizer, device)
+        test(test_dataloader, model, loss_fn, device)
+    print("Done!")
+
+    torch.save(model.state_dict(), "mnistmodel.pth")
+
+if __name__ == "__main__":
+    run()
